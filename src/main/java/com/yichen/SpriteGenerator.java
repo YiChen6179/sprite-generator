@@ -166,17 +166,17 @@ public class SpriteGenerator {
                     // 生成雪碧图 PNG
                     Path pngPath = outputDir.resolve("sprite.png");
                     ImageIO.write(spriteSheet, "PNG", pngPath.toFile());
+                    System.out.println("\npng格式图片已保存到: " + outputDir.resolve("sprite.png"));
                     // 调用本地 WebP 转换
                     File webpFile = outputDir.resolve("sprite.webp").toFile();
                     WebPConverter.convertToWebP(pngPath.toFile(), webpFile, 90);
-                    System.out.println("精灵图已保存到: " + outputDir.resolve("sprite.webp"));
+                    System.out.println("webp格式图片已保存到: " + outputDir.resolve("sprite.webp"));
                     promise.complete();
                 } catch (IOException e) {
                     promise.fail(e);
                 }
             }).onFailure(v->{
                 System.err.println("\nWebP 转换失败");
-                System.out.println("精灵图已保存到: " + outputDir.resolve("sprite.png"));
 //                fs.writeFile(outputDir.resolve("sprite.png").toString(), Buffer.buffer(baos.toByteArray()))
 //                        .onSuccess(a -> {
 //

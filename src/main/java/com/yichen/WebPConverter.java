@@ -30,12 +30,12 @@ public class WebPConverter {
             if (exitCode != 0) {
                 throw new IOException("cwebp 执行失败，退出码: " + exitCode);
             }
-            System.out.println("\n调用cwebp.exe程序执行完毕");
+            System.out.println("调用本地cwebp.exe程序对图片转换完毕");
         } catch (InterruptedException e) {
             throw new IOException("cwebp 执行被中断", e);
         } finally {
             process.destroy();
-            System.out.println("子进程已销毁");
+            System.out.println("cwebp.exe子进程已销毁");
         }
     }
 
