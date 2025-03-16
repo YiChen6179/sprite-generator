@@ -25,6 +25,12 @@ public class CliOptions {
     )
     private String outputDir = "out";
 
+    @CommandLine.Option(
+        names = {"--all-images", "-all"},
+        description = "读取输入目录下的所有图片，不使用正则表达式过滤"
+    )
+    private boolean allImages = false;
+
     // Getters
     public Path getInputPath() {
         return Paths.get(inputDir).toAbsolutePath();
@@ -32,5 +38,9 @@ public class CliOptions {
     
     public Path getOutputPath() {
         return Paths.get(outputDir).toAbsolutePath();
+    }
+
+    public boolean isAllImages() {
+        return allImages;
     }
 }

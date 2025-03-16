@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SpriteGenerator {
@@ -25,6 +26,8 @@ public class SpriteGenerator {
     private final Path inputDir;
     private final Path outputDir;
     private final ProgressBar progressBar;
+
+    private final Boolean allowAllImages;
     private final List<BufferedImage> images = new ArrayList<>();
     private final List<String> imageNames = new ArrayList<>();
 
@@ -34,6 +37,7 @@ public class SpriteGenerator {
         this.inputDir = options.getInputPath();
         this.outputDir = options.getOutputPath();
         this.progressBar = new ProgressBar();
+        this.allowAllImages = options.isAllImages();
     }
 
     public void generate() {
@@ -41,7 +45,8 @@ public class SpriteGenerator {
         fs.mkdirsBlocking(outputDir.toString());
 
         // 2. 使用精确正则表达式过滤文件
-        String pattern = "^char_\\d+_[^_]+?\\.(png|jpg|jpeg)";
+
+        String pattern = !allowAllImages ? "^char_\\d+_[^_]+?\\.(png|jpg|jpeg)" : ".+\\.(png|jpg|jpeg)$";
         fs.readDir(inputDir.toString(), pattern) // 更新过滤正则
                 .onSuccess(files -> {
                     List<Path> imagePaths = files.stream()
@@ -161,7 +166,7 @@ public class SpriteGenerator {
             if (!ImageIO.write(spriteSheet, "PNG", baos)) { // 先保存为PNG测试
                 throw new IOException("PNG编码失败");
             }
-            vertx.executeBlocking(promise->{
+            vertx.executeBlocking(promise -> {
                 try {
                     // 生成雪碧图 PNG
                     Path pngPath = outputDir.resolve("sprite.png");
@@ -175,14 +180,14 @@ public class SpriteGenerator {
                 } catch (IOException e) {
                     promise.fail(e);
                 }
-            }).onFailure(v->{
+            }).onFailure(v -> {
                 System.err.println("\nWebP 转换失败");
 //                fs.writeFile(outputDir.resolve("sprite.png").toString(), Buffer.buffer(baos.toByteArray()))
 //                        .onSuccess(a -> {
 //
 //                        })
 //                        .onFailure(this::handleError);
-            }).onComplete(s->{
+            }).onComplete(s -> {
                 // 保存 CSS
                 saveCssAndExit(css);
             });
