@@ -3,11 +3,13 @@ package com.yichen;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -66,9 +68,6 @@ public class SpriteGenerator {
         imagePaths.forEach(imagePath -> {
             String fileName = imagePath.getFileName().toString();
 
-            // 过滤规则：
-            // 1. 以 "char_" 开头
-            // 2. 不包含变种后缀（如 "_2" 或 "_boc#"）
             if (fileName.startsWith("char_") &&
                     !fileName.matches(".*(_\\d+|_boc#.*)\\..*")) {
 
@@ -156,25 +155,44 @@ public class SpriteGenerator {
         }
         g2d.dispose();
 
-        // 4. 修复保存逻辑（优先测试PNG格式）
+        // 4. 保存图片
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             if (!ImageIO.write(spriteSheet, "PNG", baos)) { // 先保存为PNG测试
                 throw new IOException("PNG编码失败");
             }
+            vertx.executeBlocking(promise->{
+                try {
+                    // 生成雪碧图 PNG
+                    Path pngPath = outputDir.resolve("sprite.png");
+                    ImageIO.write(spriteSheet, "PNG", pngPath.toFile());
+                    // 调用本地 WebP 转换
+                    File webpFile = outputDir.resolve("sprite.webp").toFile();
+                    WebPConverter.convertToWebP(pngPath.toFile(), webpFile, 90);
+                    System.out.println("精灵图已保存到: " + outputDir.resolve("sprite.webp"));
+                    promise.complete();
+                } catch (IOException e) {
+                    promise.fail(e);
+                }
+            }).onFailure(v->{
+                System.err.println("\nWebP 转换失败");
+                System.out.println("精灵图已保存到: " + outputDir.resolve("sprite.png"));
+//                fs.writeFile(outputDir.resolve("sprite.png").toString(), Buffer.buffer(baos.toByteArray()))
+//                        .onSuccess(a -> {
+//
+//                        })
+//                        .onFailure(this::handleError);
+            }).onComplete(s->{
+                // 保存 CSS
+                saveCssAndExit(css);
+            });
 
-            fs.writeFile(outputDir.resolve("sprite.png").toString(), Buffer.buffer(baos.toByteArray()))
-                    .onSuccess(v -> {
-                        System.out.println("\n精灵图已保存到: " + outputDir.resolve("sprite.png"));
-                        // 保存 CSS
-                        saveCssAndExit(css);
-                    })
-                    .onFailure(this::handleError);
         } catch (Exception e) {
             handleError(e);
         }
 
     }
+
     private void saveCssAndExit(StringBuilder css) {
         // 保存 CSS 文件
         fs.writeFile(outputDir.resolve("sprite_avatar.css").toString(), Buffer.buffer(css.toString().getBytes()))

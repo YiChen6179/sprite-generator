@@ -5,7 +5,7 @@ jdk8或更高版本
 >     -i [输入路径] 可选，默认为当前目录下的avatar文件夹  
 >     -o [输出路径] 可选，默认为当前目录下的out文件夹  
 
->例如:> java -jar .\target\sprite-generator-1.0.0.jar -i E:\Resources\ArknightsGameResource\avatar -o E:\Resources
+>例如:> java -jar D:\code\sprite-util\target\sprite-util-1.0.0.jar -i E:\Resources\ArknightsGameResource\avatar -o E:\Resources\out
 > 
 读取“E:\Resources\ArknightsGameResource\avatar”路径下的图片,输出精灵图和css到“E:\Resources”路径下
 
