@@ -2,10 +2,11 @@
 jdk8或更高版本
 ## 指令格式
 >java -jar [jar包路径]  
->     -i [输入路径] 可选，默认为当前目录下的avatar文件夹  
->     -o [输出路径] 可选，默认为当前目录下的out文件夹  
+>     -i/--input  [输入路径] 可选，默认为当前目录下的avatar文件夹  
+>     -o/--output  [输出路径] 可选，默认为当前目录下的out文件夹  
+>     -all/--all-images [是否生成所有图片的精灵图] 可选，默认为false，如果为true则生成所有图片的精灵图，否则只生成明日方舟指定干员图片的精灵图
 
->例如:> java -jar D:\code\sprite-util\target\sprite-util-1.1.jar -i E:\Resources\ArknightsGameResource\avatar -o E:\Resources\out
+>例如:> java -jar D:\code\sprite-util\target\sprite-util-1.1.jar -i E:\Resources\ArknightsGameResource\avatar -o E:\Resources\out -all
 > 
 读取“E:\Resources\ArknightsGameResource\avatar”路径下的图片,输出精灵图和css到“E:\Resources”路径下
 
