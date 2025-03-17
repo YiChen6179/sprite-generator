@@ -8,7 +8,7 @@ public class ProgressBar {
         int progress = (int) ((double) current / total * 100);
         if (progress != lastProgress) {
             int filled = (int) ((double) WIDTH * current / total);
-            String bar = "[" + repeat("=", filled) + repeat(" ", WIDTH - filled) + "] " + progress + "%";
+            String bar = "正在读取图片中[" + repeat("=", filled) + repeat(" ", WIDTH - filled) + "] " + progress + "%";
             System.out.print("\r" + bar);
             lastProgress = progress;
         }

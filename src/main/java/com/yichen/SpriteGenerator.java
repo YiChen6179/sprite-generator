@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -59,10 +60,17 @@ public class SpriteGenerator {
                     }
 
                     // 3. 处理图片
-                    processImages(imagePaths);
+                    vertx.executeBlocking(promise -> {
+                        processImages(imagePaths); // 现在运行在工作线程
+                        promise.complete();
+                    }, false, res -> {
+                        if (res.failed()) {
+                            handleError(res.cause());
+                        }
+                    });
+
                 })
                 .onFailure(Throwable::printStackTrace);
-
     }
 
     private void processImages(List<Path> imagePaths) {
@@ -72,26 +80,29 @@ public class SpriteGenerator {
         imagePaths.forEach(imagePath -> {
             String fileName = imagePath.getFileName().toString();
 
-
-            fs.readFile(imagePath.toString())
-                    .onSuccess(buffer -> {
-                        // 将图片加载到内存中
-                        try {
-                            BufferedImage image = ImageIO.read(new ByteArrayInputStream(buffer.getBytes()));
-                            images.add(image);
-                            imageNames.add(fileName.split("\\.")[0]); // 保存图片名称（不含扩展名）
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-
-                        // 更新进度条
-                        progressBar.update(processed.incrementAndGet(), total);
-                        if (processed.get() == total) {
-                            generateSpriteSheet(); // 所有图片加载完成后生成精灵图
-                        }
-                    })
-                    .onFailure(Throwable::printStackTrace);
-
+            vertx.executeBlocking(promise -> {
+                try {
+                    byte[] bytes = Files.readAllBytes(imagePath);
+                    BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
+                    images.add(image);
+                    imageNames.add(fileName.split("\\.")[0]);
+                    promise.complete();
+                }catch (IOException e){
+                    promise.fail(e);
+                }
+            },false,res->{
+                if (res.succeeded()){
+                    progressBar.update(processed.incrementAndGet(), total);
+                    if (processed.get() == total){
+                        vertx.executeBlocking(promise -> {
+                            generateSpriteSheet();
+                            promise.complete();
+                        },true,null);
+                    }
+                }else if (res.failed()){
+                    handleError(res.cause());
+                }
+            });
         });
     }
 
@@ -157,10 +168,12 @@ public class SpriteGenerator {
             vertx.executeBlocking(promise -> {
                 try {
                     // 生成雪碧图 PNG
+                    System.out.println("\n正在保存sprite.png...");
                     Path pngPath = outputDir.resolve("sprite.png");
                     ImageIO.write(spriteSheet, "PNG", pngPath.toFile());
-                    System.out.println("\npng格式图片已保存到: " + outputDir.resolve("sprite.png"));
+                    System.out.println("png格式图片已保存到: " + outputDir.resolve("sprite.png"));
                     // 调用本地 WebP 转换
+                    System.out.println("正在转换并保存sprite.webp...");
                     File webpFile = outputDir.resolve("sprite.webp").toFile();
                     WebPConverter.convertToWebP(pngPath.toFile(), webpFile, 90);
                     System.out.println("webp格式图片已保存到: " + outputDir.resolve("sprite.webp"));
@@ -168,13 +181,8 @@ public class SpriteGenerator {
                 } catch (IOException e) {
                     promise.fail(e);
                 }
-            }).onFailure(v -> {
-                System.err.println("\nWebP 转换失败");
-//                fs.writeFile(outputDir.resolve("sprite.png").toString(), Buffer.buffer(baos.toByteArray()))
-//                        .onSuccess(a -> {
-//
-//                        })
-//                        .onFailure(this::handleError);
+            }).onFailure(err -> {
+                System.err.println("\nWebP 转换失败"+err.getMessage());
             }).onComplete(s -> {
                 // 保存 CSS
                 saveCssAndExit(css);
