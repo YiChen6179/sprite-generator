@@ -1,5 +1,7 @@
 package com.yichen;
 
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
@@ -15,7 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -28,8 +32,12 @@ public class SpriteGenerator {
     private final Integer maxWidth;
     private final Boolean allowAllImages;
     private final ProgressBar progressBar;
-    private final List<BufferedImage> images = new ArrayList<>();
-    private final List<String> imageNames = new ArrayList<>();
+    private  long startTime;
+    private  long endTime;
+    private final AtomicInteger processed = new AtomicInteger(0);
+    private final List<BufferedImage> images = Collections.synchronizedList(new ArrayList<>());
+    private final List<String> imageNames = Collections.synchronizedList(new ArrayList<>());
+
 
     public SpriteGenerator(Vertx vertx, CliOptions options) {
         this.vertx = vertx;
@@ -42,6 +50,7 @@ public class SpriteGenerator {
     }
 
     public void generate() {
+        startTime = System.currentTimeMillis();
         // 1. 创建输出目录
         fs.mkdirsBlocking(outputDir.toString());
 
@@ -74,34 +83,37 @@ public class SpriteGenerator {
     }
 
     private void processImages(List<Path> imagePaths) {
-        AtomicInteger processed = new AtomicInteger(0);
         int total = imagePaths.size();
 
-        imagePaths.forEach(imagePath -> {
-            String fileName = imagePath.getFileName().toString();
+        List<Future> loadFutures = imagePaths.stream()
+                .map(imagePath-> createImageLoadFuture(imagePath,processed, total))
+                .collect(Collectors.toList());
 
-            vertx.executeBlocking(promise -> {
+        CompositeFuture.all(loadFutures)
+                .onSuccess(v ->
+                        vertx.executeBlocking(promise -> {
+                            generateSpriteSheet();
+                            promise.complete();
+                        }, true, null));
+    }
+
+    private Future<Object> createImageLoadFuture(Path imagePath, AtomicInteger processed, int total) {
+        return Future.future(promise -> {
+            String fileName = imagePath.getFileName().toString();
+            vertx.executeBlocking(blockingPromise -> {
                 try {
                     byte[] bytes = Files.readAllBytes(imagePath);
                     BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
                     images.add(image);
                     imageNames.add(fileName.split("\\.")[0]);
-                    promise.complete();
-                }catch (IOException e){
-                    promise.fail(e);
+                    blockingPromise.complete();
+                } catch (IOException e) {
+                    blockingPromise.fail(e);
                 }
-            },false,res->{
-                if (res.succeeded()){
-                    progressBar.update(processed.incrementAndGet(), total);
-                    if (processed.get() == total){
-                        vertx.executeBlocking(promise -> {
-                            generateSpriteSheet();
-                            promise.complete();
-                        },true,null);
-                    }
-                }else if (res.failed()){
-                    handleError(res.cause());
-                }
+            }, false, res->{
+                // 无论成功失败都更新进度
+                vertx.runOnContext(v -> progressBar.update(processed.incrementAndGet(), total));
+                promise.handle(res); // 关键！将结果传递到外层Future
             });
         });
     }
@@ -168,21 +180,21 @@ public class SpriteGenerator {
             vertx.executeBlocking(promise -> {
                 try {
                     // 生成雪碧图 PNG
-                    System.out.println("\n正在保存sprite.png...");
+                    System.out.println("\n正在将图片另存为sprite.png...");
                     Path pngPath = outputDir.resolve("sprite.png");
                     ImageIO.write(spriteSheet, "PNG", pngPath.toFile());
-                    System.out.println("png格式图片已保存到: " + outputDir.resolve("sprite.png"));
+                    System.out.println("png格式图片已另存为: " + outputDir.resolve("sprite.png"));
                     // 调用本地 WebP 转换
-                    System.out.println("正在转换并保存sprite.webp...");
+                    System.out.println("正在将图片转换并另存为sprite.webp...");
                     File webpFile = outputDir.resolve("sprite.webp").toFile();
                     WebPConverter.convertToWebP(pngPath.toFile(), webpFile, 90);
-                    System.out.println("webp格式图片已保存到: " + outputDir.resolve("sprite.webp"));
+                    System.out.println("webp格式图片已另存为: " + outputDir.resolve("sprite.webp"));
                     promise.complete();
                 } catch (IOException e) {
                     promise.fail(e);
                 }
             }).onFailure(err -> {
-                System.err.println("\nWebP 转换失败"+err.getMessage());
+                System.err.println("\nWebP 转换失败" + err.getMessage());
             }).onComplete(s -> {
                 // 保存 CSS
                 saveCssAndExit(css);
@@ -199,6 +211,8 @@ public class SpriteGenerator {
         fs.writeFile(outputDir.resolve("sprite_avatar.css").toString(), Buffer.buffer(css.toString().getBytes()))
                 .onSuccess(v -> {
                     System.out.println("CSS 文件已保存到: " + outputDir.resolve("sprite_avatar.css"));
+                    endTime= System.currentTimeMillis();
+                    printStatisticsReport();
                     vertx.close(); // 所有任务完成后关闭程序
                 })
                 .onFailure(this::handleError); // 失败时调用错误处理
@@ -209,5 +223,22 @@ public class SpriteGenerator {
         e.printStackTrace();
         vertx.close(); // 强制关闭程序
     }
+    private  void printStatisticsReport() {
+        long durationMillis = endTime - startTime;
+
+        // 格式化成 mm:ss.SSS 形式
+        String formattedDuration = String.format("%02d:%02d.%03d",
+                TimeUnit.MILLISECONDS.toMinutes(durationMillis),
+                TimeUnit.MILLISECONDS.toSeconds(durationMillis) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(durationMillis)),
+                durationMillis % 1000);
+
+        System.out.println("\n\n===== 处理统计 =====");
+        System.out.println("处理图片数量: " + processed.get() + " 张");
+        System.out.println("总耗时:       " + formattedDuration+" 秒");
+        System.out.println("平均速度:     " + (processed.get() > 0 ?
+                        String.format("%.1f 张/秒", processed.get() / (durationMillis / 1000.0)) : "N/A"));
+    }
+
 
 }
