@@ -44,7 +44,6 @@ public class SpriteGenerator {
         fs.mkdirsBlocking(outputDir.toString());
 
         // 2. 使用精确正则表达式过滤文件
-
         String pattern = !allowAllImages ? "^char_\\d+_[^_]+?\\.(png|jpg|jpeg)" : ".+\\.(png|jpg|jpeg)$";
         fs.readDir(inputDir.toString(), pattern) // 更新过滤正则
                 .onSuccess(files -> {
@@ -53,7 +52,7 @@ public class SpriteGenerator {
                             .collect(Collectors.toList());
 
                     if (imagePaths.isEmpty()) {
-                        System.out.println("No valid base character images found");
+                        System.out.println("未找到有效的图像");
                         vertx.close();
                         return;
                     }
@@ -97,11 +96,6 @@ public class SpriteGenerator {
 
 
     private void generateSpriteSheet() {
-        if (images.isEmpty()) {
-            System.out.println("\n没有找到符合条件的图片，无法生成精灵图。");
-            vertx.close();
-            return;
-        }
         // 1. 计算精灵图尺寸（修复坐标重置问题）
         int maxWidth = 4096;
         int currentX = 0, currentY = 0, rowHeight = 0, totalHeight = 0;
