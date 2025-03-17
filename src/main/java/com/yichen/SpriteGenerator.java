@@ -16,7 +16,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SpriteGenerator {
@@ -73,31 +72,26 @@ public class SpriteGenerator {
         imagePaths.forEach(imagePath -> {
             String fileName = imagePath.getFileName().toString();
 
-            if (fileName.startsWith("char_") &&
-                    !fileName.matches(".*(_\\d+|_boc#.*)\\..*")) {
 
-                fs.readFile(imagePath.toString())
-                        .onSuccess(buffer -> {
-                            // 将图片加载到内存中
-                            try {
-                                BufferedImage image = ImageIO.read(new ByteArrayInputStream(buffer.getBytes()));
-                                images.add(image);
-                                imageNames.add(fileName.split("\\.")[0]); // 保存图片名称（不含扩展名）
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+            fs.readFile(imagePath.toString())
+                    .onSuccess(buffer -> {
+                        // 将图片加载到内存中
+                        try {
+                            BufferedImage image = ImageIO.read(new ByteArrayInputStream(buffer.getBytes()));
+                            images.add(image);
+                            imageNames.add(fileName.split("\\.")[0]); // 保存图片名称（不含扩展名）
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
 
-                            // 更新进度条
-                            progressBar.update(processed.incrementAndGet(), total);
-                            if (processed.get() == total) {
-                                generateSpriteSheet(); // 所有图片加载完成后生成精灵图
-                            }
-                        })
-                        .onFailure(Throwable::printStackTrace);
-            } else {
-                // 跳过不符合条件的图片
-                progressBar.update(processed.incrementAndGet(), total);
-            }
+                        // 更新进度条
+                        progressBar.update(processed.incrementAndGet(), total);
+                        if (processed.get() == total) {
+                            generateSpriteSheet(); // 所有图片加载完成后生成精灵图
+                        }
+                    })
+                    .onFailure(Throwable::printStackTrace);
+
         });
     }
 
