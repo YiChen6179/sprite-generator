@@ -24,9 +24,9 @@ public class SpriteGenerator {
     private final FileSystem fs;
     private final Path inputDir;
     private final Path outputDir;
-    private final ProgressBar progressBar;
-
+    private final Integer maxWidth;
     private final Boolean allowAllImages;
+    private final ProgressBar progressBar;
     private final List<BufferedImage> images = new ArrayList<>();
     private final List<String> imageNames = new ArrayList<>();
 
@@ -37,6 +37,7 @@ public class SpriteGenerator {
         this.outputDir = options.getOutputPath();
         this.progressBar = new ProgressBar();
         this.allowAllImages = options.isAllImages();
+        this.maxWidth = options.getMaxWidth();
     }
 
     public void generate() {
@@ -97,7 +98,6 @@ public class SpriteGenerator {
 
     private void generateSpriteSheet() {
         // 1. 计算精灵图尺寸（修复坐标重置问题）
-        int maxWidth = 4096;
         int currentX = 0, currentY = 0, rowHeight = 0, totalHeight = 0;
         // 首次循环：仅用于计算总高度
         for (BufferedImage image : images) {
