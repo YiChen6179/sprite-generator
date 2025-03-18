@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>sprite-util</artifactId>
-    <version>1.3</version>
+    <artifactId>sprite-generator</artifactId>
+    <version>1.4</version>
     <packaging>jar</packaging>
 
     <properties>

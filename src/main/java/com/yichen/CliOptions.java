@@ -7,10 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @CommandLine.Command(
-    name = "sprite-util",
+    name = "sprite-generator",
     mixinStandardHelpOptions = true,
-    version = "1.2",
-    description = "基于Vert.x异步IO的CSS Sprite生成器"
+    version = "1.4",
+    description = "基于Vert.x异步IO的Sprite生成器"
 )
 public class CliOptions {
     @CommandLine.Spec
@@ -59,20 +59,34 @@ public class CliOptions {
     }
     private int maxWidth = 4096; // 默认值
 
+    @CommandLine.Option(
+            names = {"-q", "--quality"},
+            description = "生成webp格式图片质量（默认：90）",
+            paramLabel = "[0-100]"
+    )
+    public void setQuality(int quality) {
+        if (quality < 0 || quality > 100) {
+            throw new CommandLine.ParameterException(
+                    spec.commandLine(),
+                    "质量必须为 0-100 之间的整数"
+            );
+        }
+        this.quality = quality;
+    }
+    private int quality = 80;
 
+    public int getQuality() {
+        return quality;
+    }
     public int getMaxWidth() {
         return maxWidth;
     }
-
-    // Getters
     public Path getInputPath() {
         return Paths.get(inputDir);
     }
-    
     public Path getOutputPath() {
         return Paths.get(outputDir).toAbsolutePath();
     }
-
     public boolean isAllImages() {
         return allImages;
     }

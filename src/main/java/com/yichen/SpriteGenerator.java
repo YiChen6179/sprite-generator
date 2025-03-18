@@ -30,10 +30,11 @@ public class SpriteGenerator {
     private final Path inputDir;
     private final Path outputDir;
     private final Integer maxWidth;
+    private long startTime;
+    private long endTime;
+    private int quality;
     private final Boolean allowAllImages;
     private final ProgressBar progressBar;
-    private  long startTime;
-    private  long endTime;
     private final AtomicInteger processed = new AtomicInteger(0);
     private final List<BufferedImage> images = Collections.synchronizedList(new ArrayList<>());
     private final List<String> imageNames = Collections.synchronizedList(new ArrayList<>());
@@ -47,6 +48,7 @@ public class SpriteGenerator {
         this.progressBar = new ProgressBar();
         this.allowAllImages = options.isAllImages();
         this.maxWidth = options.getMaxWidth();
+        this.quality = options.getQuality();
     }
 
     public void generate() {
@@ -187,7 +189,7 @@ public class SpriteGenerator {
                     // 调用本地 WebP 转换
                     System.out.println("正在将图片转换并另存为sprite.webp...");
                     File webpFile = outputDir.resolve("sprite.webp").toFile();
-                    WebPConverter.convertToWebP(pngPath.toFile(), webpFile, 90);
+                    WebPConverter.convertToWebP(pngPath.toFile(), webpFile, quality);
                     System.out.println("webp格式图片已另存为: " + outputDir.resolve("sprite.webp"));
                     promise.complete();
                 } catch (IOException e) {
