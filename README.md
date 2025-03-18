@@ -63,7 +63,7 @@ CSS文件示例：
 ```css
 /* 自动生成的CSS片段 */
 .sprite-image_1 {
-    background: url(sprite.webp) -0px -0px;
+    background: url(####) -0px -0px;
     width: 300px;
     height: 150px;
 }
