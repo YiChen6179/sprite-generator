@@ -4,7 +4,7 @@
 [![WebP集成](https://img.shields.io/badge/WebP-内置支持-important)](https://github.com/webmproject/libwebp)
 ![JDK需求](https://img.shields.io/badge/JDK-8%2B-orange)
 
-一键精灵图生成解决方案，专为开发者设计的自动化图片优化工具。原生支持WebP格式，适用于网页性能优化、游戏资源打包等场景。
+一键精灵图生成解决方案，起源于对《明日方舟》开源社区工具链的优化需求，专为开发者设计的自动化图片处理工具。原生支持WebP格式，适用于网页性能优化、游戏资源打包等场景。
 
 ![使用案例](image%2Fimg_1.png)
 
