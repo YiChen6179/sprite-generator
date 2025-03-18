@@ -79,3 +79,11 @@ CSS文件示例：
 ### 第三方组件
 - **libwebp**：BSD-like许可 [详情](https://github.com/webmproject/libwebp/blob/main/COPYING)
 - **Vert.x**：Apache License 2.0
+
+## 💖 支持开发者
+如果您觉得这个项目有帮助，欢迎通过以下方式支持：
+
+
+| 支付宝 | 微信 |
+|-------|------|
+| ![6668ccfdd1ca7319519016a5243a5f21.jpg](image%2F6668ccfdd1ca7319519016a5243a5f21.jpg) | ![875aa31867c77ad5bc9587731f1c8c1c.jpg](image%2F875aa31867c77ad5bc9587731f1c8c1c.jpg) |
